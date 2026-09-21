@@ -202,10 +202,16 @@ class SandboxProvider:
         height *= np.clip(1.0 - 0.00035 * np.clip(elevation - 400.0, 0.0, None), 0.5, 1.0)
 
         # --- Disturbance: clearings that expand with time ---------------
+        # Each synthetic site is assigned a disturbance regime from its own seed,
+        # spanning effectively-protected forest to an active clearing frontier.
+        # Real landscapes differ this way, and it means change detection has
+        # something to find at some sites and correctly nothing at others.
+        regime = ((seed >> 11) % 1000) / 1000.0
+        disturbance_rate = 0.004 + 0.034 * (regime**1.6)
         years_since = max(year - 2019, 0)
         dist_field = fbm(x_m / 1_400.0, y_m / 1_400.0, seed + 977, octaves=4)
         # Threshold recedes over time -> cleared area grows year on year.
-        clear_threshold = 0.86 - 0.012 * years_since
+        clear_threshold = 0.88 - disturbance_rate * years_since
         cleared = dist_field > clear_threshold
         edge = (dist_field > clear_threshold - 0.05) & ~cleared
 
