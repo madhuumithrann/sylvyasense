@@ -179,10 +179,28 @@ the tiles are painted with, so a legend cannot drift from the pixels.
 
 ### Basemap
 
-One MapLibre style, built once and never swapped. Bundled Natural Earth vectors
-and a graticule sit beneath an optional raster basemap, so an unreachable tile
-host costs detail rather than the whole map. Set `VITE_BASEMAP_URL` to use your
-own provider.
+Pick one in the **Basemap** group at the top of the layer panel. All options are
+keyless:
+
+| Option | Source | Good for |
+|---|---|---|
+| **Satellite** (default) | Esri World Imagery | Seeing the actual canopy under an analysis layer |
+| **Dark canvas** | Esri Dark Gray | A quiet backdrop so analysis colours dominate |
+| **Terrain** | Esri World Terrain | Relief and landform context |
+| **Streets** | OpenStreetMap | Place names and access routes for a field crew |
+| **None** | Bundled Natural Earth | Works with no network at all |
+
+The choice is remembered across reloads, because which provider works is a
+property of your network rather than of the task.
+
+Underneath every option sit bundled Natural Earth vectors and a graticule, so a
+tile host that is blocked or down costs detail rather than the whole map. Set
+`VITE_BASEMAP_URL` to add your own provider to the list.
+
+> The default was CARTO until it moved its public basemaps behind an API key
+> and began serving `API KEY REQUIRED` watermarks instead of failing — a
+> degradation no error handling can detect, since the tiles load successfully.
+> Hence a switcher rather than a single hard-coded provider.
 
 ---
 
@@ -217,7 +235,7 @@ Copy `.env.example` to `backend/.env` (git-ignored).
 | `SYLVASENSE_MAX_AOI_KM2` | `2500` | Largest area accepted in one run |
 | `SYLVASENSE_MIN_GEDI_SAMPLES` | `40` | Below this, no local calibration is attempted |
 | `SYLVASENSE_ANALYSIS_SCALE_M` | `30` | Native working resolution |
-| `VITE_BASEMAP_URL` | CARTO dark | Raster basemap tiles |
+| `VITE_BASEMAP_URL` | — | Adds a custom tile source to the basemap list |
 
 `SYLVASENSE_PROVIDER=earthengine` makes a missing credential a hard failure
 instead of a fallback — the right setting for any deployment where a simulated

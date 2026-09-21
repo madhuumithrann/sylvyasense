@@ -94,6 +94,73 @@ test.describe('Map interaction', () => {
   });
 });
 
+test.describe('Basemap', () => {
+  test('switching provider changes the live map and keeps layer order', async ({ page }) => {
+    await openApp(page);
+
+    const basemapSource = () =>
+      page.evaluate(() => {
+        const map = (window as never as {
+          __sylvasenseMap?: {
+            getStyle(): { sources: Record<string, { tiles?: string[] }> };
+          };
+        }).__sylvasenseMap;
+        return map?.getStyle().sources.basemap?.tiles?.[0] ?? null;
+      });
+
+    const first = await basemapSource();
+    expect(first).toBeTruthy();
+
+    await page.getByTestId('basemap-streets').check();
+    await expect.poll(basemapSource).toContain('openstreetmap.org');
+
+    // "None" must remove the raster entirely and leave the bundled vectors,
+    // so the map still works with no tile host reachable at all.
+    await page.getByTestId('basemap-none').check();
+    await expect.poll(basemapSource).toBeNull();
+    await expect.poll(() => mapLayerIds(page)).toContain('land');
+    await expect.poll(() => mapLayerIds(page)).not.toContain('basemap');
+
+    await page.getByTestId('basemap-satellite').check();
+    await expect.poll(basemapSource).toContain('arcgisonline.com');
+  });
+
+  test('the basemap sits under the analysis layers, not over them', async ({ page }) => {
+    await openApp(page);
+    await selectDemoArea(page);
+    await runAudit(page);
+    await runAnalysis(page);
+    await expect.poll(() => mapLayerIds(page)).toContain('analysis-agb');
+
+    // Switching provider must not float the basemap above the results.
+    await page.getByTestId('basemap-dark').check();
+    await page.waitForTimeout(800);
+
+    const ids = await mapLayerIds(page);
+    const basemap = ids.indexOf('basemap');
+    const analysis = ids.indexOf('analysis-agb');
+    const aoi = ids.indexOf('aoi-fill');
+
+    expect(basemap).toBeGreaterThanOrEqual(0);
+    expect(basemap).toBeLessThan(analysis);
+    expect(analysis).toBeLessThan(aoi);
+  });
+
+  test('the choice survives a reload', async ({ page }) => {
+    await openApp(page);
+    await page.getByTestId('basemap-streets').check();
+    await page.waitForTimeout(600);
+
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForFunction(
+      () => Boolean((window as never as { __sylvasenseMap?: { loaded(): boolean } }).__sylvasenseMap?.loaded()),
+      null,
+      { timeout: 30_000 },
+    );
+    await expect(page.getByTestId('basemap-streets')).toBeChecked();
+  });
+});
+
 test.describe('Error and empty states', () => {
   test('an oversized area is refused with a readable explanation', async ({ page }) => {
     await openApp(page);

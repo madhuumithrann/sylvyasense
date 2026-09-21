@@ -9,7 +9,13 @@ import maplibregl, {
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { api, changeTileUrl, tileUrl } from '../lib/api';
-import { ANALYSIS_LAYER_ANCHOR, buildStyle } from '../lib/basemap';
+import {
+  ANALYSIS_LAYER_ANCHOR,
+  BASEMAP_LAYER_ID,
+  BASEMAP_SOURCE_ID,
+  basemapById,
+  buildStyle,
+} from '../lib/basemap';
 import { PolygonDrawer } from '../lib/draw';
 import { COLORS, PRIORITY_COLOR } from '../lib/mapTheme';
 import type { FieldSite } from '../lib/types';
@@ -51,6 +57,7 @@ export function MapCanvas() {
   const year = useStore((s) => s.year);
   const compareYear = useStore((s) => s.compareYear);
   const selectedCell = useStore((s) => s.selectedCell);
+  const basemap = useStore((s) => s.basemap);
 
   const setGeometry = useStore((s) => s.setGeometry);
   const setDrawMode = useStore((s) => s.setDrawMode);
@@ -65,7 +72,7 @@ export function MapCanvas() {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: buildStyle(),
+      style: buildStyle(useStore.getState().basemap),
       center: [-60.0, -3.0],
       zoom: 2.4,
       minZoom: 1,
@@ -157,6 +164,48 @@ export function MapCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ------------------------------------------------------------ basemap swap
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+
+    const option = basemapById(basemap);
+    basemapFailuresRef.current = 0;
+    setBasemapOffline(false);
+
+    // Removing and re-adding (rather than setTiles) also refreshes the
+    // attribution control, which reads its credit from the source definition.
+    if (map.getLayer(BASEMAP_LAYER_ID)) map.removeLayer(BASEMAP_LAYER_ID);
+    if (map.getSource(BASEMAP_SOURCE_ID)) map.removeSource(BASEMAP_SOURCE_ID);
+
+    if (!option.url) return;
+
+    map.addSource(BASEMAP_SOURCE_ID, {
+      type: 'raster',
+      tiles: [option.url],
+      tileSize: 256,
+      maxzoom: option.maxzoom,
+      attribution: option.attribution,
+    });
+
+    // The basemap belongs above the bundled vectors and below everything the
+    // app draws, so it is inserted before whichever of those exists first.
+    const below =
+      analysisLayersRef.current.find((id) => map.getLayer(id)) ??
+      (map.getLayer(ANALYSIS_LAYER_ANCHOR) ? ANALYSIS_LAYER_ANCHOR : undefined);
+
+    map.addLayer(
+      {
+        id: BASEMAP_LAYER_ID,
+        type: 'raster',
+        source: BASEMAP_SOURCE_ID,
+        paint: { 'raster-opacity': 1, 'raster-fade-duration': 220 },
+      } as RasterLayerSpecification,
+      below,
+    );
+  }, [basemap, ready]);
+
   // --------------------------------------------------------------- AOI sync
 
   useEffect(() => {
@@ -221,6 +270,7 @@ export function MapCanvas() {
     const anchor = map.getLayer(ANALYSIS_LAYER_ANCHOR)
       ? ANALYSIS_LAYER_ANCHOR
       : undefined;
+    // (Analysis rasters go below the AOI outline and above the basemap.)
 
     for (const key of activeLayers) {
       const isChangeLayer = ['agb_change', 'carbon_change', 'change_class'].includes(
@@ -399,7 +449,7 @@ export function MapCanvas() {
       <MapControls
         map={mapRef.current}
         cursor={cursor}
-        basemapOffline={basemapOffline}
+        basemapOffline={basemapOffline && basemapById(basemap).url !== null}
         onDraw={startDraw}
         onCancelDraw={cancelDraw}
         onFinishDraw={finishDraw}

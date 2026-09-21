@@ -1,17 +1,23 @@
 /**
  * Basemap construction.
  *
- * SylvaSense must render a usable map in two very different situations:
+ * SylvaSense must render a usable map in three situations:
  *
- *   ONLINE   a raster basemap from a tile provider (configurable; the default
- *            needs no API key). Best context for interpreting imagery.
- *   OFFLINE  no external tile host is reachable — a restricted network, an
- *            air-gapped deployment, or a provider outage. A bundled Natural
- *            Earth vector basemap plus a graticule is drawn instead, entirely
- *            from data shipped with the app.
+ *   ONLINE    a raster basemap from a tile provider. Several keyless options
+ *             are offered because providers change their terms: CARTO, for
+ *             one, moved its public basemaps behind an API key and now serves
+ *             "API KEY REQUIRED" watermarks rather than failing outright — a
+ *             failure no amount of error handling can detect, because the
+ *             tiles load successfully.
+ *   OFFLINE   no external tile host is reachable. Bundled Natural Earth
+ *             vectors and a graticule are drawn instead, entirely from data
+ *             shipped with the app.
+ *   DELIBERATE a user who wants no basemap at all, so the analysis layers sit
+ *             on a plain cartographic backdrop.
  *
- * The fallback is automatic and announced in the UI, never silent: a map that
- * quietly shows nothing is worse than one that says why.
+ * The switcher exists because the right answer differs per deployment and per
+ * network, and because a basemap that silently degrades is worse than one the
+ * user can change.
  */
 
 import type { StyleSpecification } from 'maplibre-gl';
@@ -21,14 +27,89 @@ import countriesTopo from 'world-atlas/countries-110m.json';
 
 import { COLORS } from './mapTheme';
 
-/** Raster basemap tiles. Overridable so a deployment can use its own. */
-export const RASTER_BASEMAP_URL =
-  import.meta.env.VITE_BASEMAP_URL ??
-  'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+export interface BasemapOption {
+  id: string;
+  label: string;
+  description: string;
+  /** null means: draw only the bundled vectors. */
+  url: string | null;
+  attribution: string;
+  maxzoom: number;
+}
 
-export const RASTER_BASEMAP_ATTRIBUTION =
-  import.meta.env.VITE_BASEMAP_ATTRIBUTION ??
-  '© OpenStreetMap contributors © CARTO';
+/**
+ * Keyless raster basemaps.
+ *
+ * Satellite imagery is the default: this is an Earth-observation product, and
+ * seeing the actual canopy underneath an analysis layer is more useful than
+ * seeing road names.
+ */
+export const BASEMAPS: BasemapOption[] = [
+  {
+    id: 'satellite',
+    label: 'Satellite',
+    description: 'Esri World Imagery — see the canopy under the analysis',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, Maxar, Earthstar Geographics',
+    maxzoom: 19,
+  },
+  {
+    id: 'dark',
+    label: 'Dark canvas',
+    description: 'Esri Dark Gray Canvas — quiet backdrop, analysis stands out',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, HERE, Garmin, © OpenStreetMap contributors',
+    maxzoom: 16,
+  },
+  {
+    id: 'terrain',
+    label: 'Terrain',
+    description: 'Esri World Terrain — relief and landform context',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, USGS, NOAA',
+    maxzoom: 13,
+  },
+  {
+    id: 'streets',
+    label: 'Streets',
+    description: 'OpenStreetMap — place names and access routes',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors',
+    maxzoom: 19,
+  },
+  {
+    id: 'none',
+    label: 'None',
+    description: 'Bundled Natural Earth vectors only — works with no network',
+    url: null,
+    attribution: 'Natural Earth',
+    maxzoom: 22,
+  },
+];
+
+/** A deployment can override the default with VITE_BASEMAP_URL. */
+const ENV_URL = import.meta.env.VITE_BASEMAP_URL as string | undefined;
+const ENV_ATTRIBUTION = import.meta.env.VITE_BASEMAP_ATTRIBUTION as string | undefined;
+
+if (ENV_URL) {
+  BASEMAPS.unshift({
+    id: 'custom',
+    label: 'Custom',
+    description: 'From VITE_BASEMAP_URL',
+    url: ENV_URL,
+    attribution: ENV_ATTRIBUTION ?? 'Custom tile source',
+    maxzoom: 22,
+  });
+}
+
+export const DEFAULT_BASEMAP = BASEMAPS[0].id;
+
+export function basemapById(id: string): BasemapOption {
+  return BASEMAPS.find((b) => b.id === id) ?? BASEMAPS[0];
+}
+
+export const BASEMAP_SOURCE_ID = 'basemap';
+export const BASEMAP_LAYER_ID = 'basemap';
 
 function landGeoJson(): GeoJSON.FeatureCollection {
   // topojson-client's types are loose; the shape is a FeatureCollection.
@@ -120,7 +201,7 @@ function offlineLayers(): StyleSpecification['layers'] {
  * detail, never the whole map, and never the app's own layers (a setStyle call
  * would destroy every source and layer added at runtime).
  */
-export function buildStyle(useRaster = true): StyleSpecification {
+export function buildStyle(basemapId: string = DEFAULT_BASEMAP): StyleSpecification {
   const sources: StyleSpecification['sources'] = {
     'ne-land': { type: 'geojson', data: landGeoJson() as never },
     'ne-countries': { type: 'geojson', data: countriesGeoJson() as never },
@@ -129,20 +210,21 @@ export function buildStyle(useRaster = true): StyleSpecification {
 
   const layers = offlineLayers();
 
-  if (useRaster) {
-    sources.basemap = {
+  const basemap = basemapById(basemapId);
+  if (basemap.url) {
+    sources[BASEMAP_SOURCE_ID] = {
       type: 'raster',
-      tiles: [RASTER_BASEMAP_URL],
+      tiles: [basemap.url],
       tileSize: 256,
-      maxzoom: 19,
-      attribution: RASTER_BASEMAP_ATTRIBUTION,
+      maxzoom: basemap.maxzoom,
+      attribution: basemap.attribution,
     };
     // Raster sits above the bundled vectors so the vectors act as a backdrop
     // for tiles that have not loaded yet, rather than disappearing.
     layers.push({
-      id: 'basemap',
+      id: BASEMAP_LAYER_ID,
       type: 'raster',
-      source: 'basemap',
+      source: BASEMAP_SOURCE_ID,
       paint: { 'raster-opacity': 1, 'raster-fade-duration': 220 },
     });
   }

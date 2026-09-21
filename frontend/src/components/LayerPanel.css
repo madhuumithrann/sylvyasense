@@ -88,7 +88,8 @@
 .layer-row:hover:not(.is-disabled) { background: var(--bg-hover); }
 .layer-row.is-disabled { opacity: 0.38; cursor: not-allowed; }
 
-.layer-row input[type='checkbox'] {
+.layer-row input[type='checkbox'],
+.layer-row input[type='radio'] {
   flex: none;
   width: 13px;
   height: 13px;

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 
+import { BASEMAPS } from '../lib/basemap';
 import type { LayerSpec, SystemLayers } from '../lib/types';
 import { useStore } from '../state/store';
 import { RampKey } from './ui';
@@ -21,6 +22,8 @@ export function LayerPanel({ catalogue }: Props) {
   const showFieldSites = useStore((s) => s.showFieldSites);
   const fieldPlan = useStore((s) => s.fieldPlan);
 
+  const basemap = useStore((s) => s.basemap);
+  const setBasemap = useStore((s) => s.setBasemap);
   const toggleLayer = useStore((s) => s.toggleLayer);
   const setLayerOpacity = useStore((s) => s.setLayerOpacity);
   const setLayersOpen = useStore((s) => s.setLayersOpen);
@@ -62,6 +65,33 @@ export function LayerPanel({ catalogue }: Props) {
 
       {layersOpen && (
         <div className="layer-panel__body" data-testid="layer-list">
+          <div className="layer-group">
+            <div className="layer-group__head layer-group__head--static">
+              <span className="eyebrow">Basemap</span>
+            </div>
+            <div className="layer-group__items">
+              {BASEMAPS.map((option) => (
+                <label
+                  className="layer-row"
+                  key={option.id}
+                  title={option.description}
+                >
+                  <input
+                    type="radio"
+                    name="basemap"
+                    checked={basemap === option.id}
+                    onChange={() => setBasemap(option.id)}
+                    data-testid={`basemap-${option.id}`}
+                  />
+                  <span className="layer-row__main">
+                    <span className="layer-row__label">{option.label}</span>
+                    <span className="layer-row__source">{option.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {disabled && (
             <p className="layer-panel__locked hint">
               Run an analysis to switch on data layers.

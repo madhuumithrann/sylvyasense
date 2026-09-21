@@ -8,6 +8,7 @@
 
 import { create } from 'zustand';
 
+import { DEFAULT_BASEMAP } from '../lib/basemap';
 import type {
   AnalysisSummary,
   ApiError,
@@ -68,6 +69,7 @@ interface State {
   compareYear: number;
 
   /* --- Map --- */
+  basemap: string;
   activeLayers: string[];
   layerOpacity: number;
   showFieldSites: boolean;
@@ -100,6 +102,7 @@ interface Actions {
   setYear: (year: number) => void;
   setCompareYear: (year: number) => void;
 
+  setBasemap: (id: string) => void;
   toggleLayer: (key: string) => void;
   setActiveLayers: (keys: string[]) => void;
   setLayerOpacity: (opacity: number) => void;
@@ -115,6 +118,18 @@ interface Actions {
 
 /** Layers that replace each other rather than stacking. */
 const BASE_IMAGERY = new Set(['truecolor', 'falsecolor']);
+
+const BASEMAP_STORAGE_KEY = 'sylvasense.basemap';
+
+/** Remember the chosen basemap: which provider works is a property of the
+ *  user's network, so re-picking it on every reload would be tedious. */
+function storedBasemap(): string {
+  try {
+    return localStorage.getItem(BASEMAP_STORAGE_KEY) ?? DEFAULT_BASEMAP;
+  } catch {
+    return DEFAULT_BASEMAP;
+  }
+}
 
 const initial: State = {
   geometry: null,
@@ -135,6 +150,7 @@ const initial: State = {
   year: CURRENT_YEAR,
   compareYear: Math.max(CURRENT_YEAR - 4, 2019),
 
+  basemap: storedBasemap(),
   activeLayers: [],
   layerOpacity: 0.9,
   showFieldSites: false,
@@ -172,7 +188,13 @@ export const useStore = create<State & Actions>((set, get) => ({
   setAoi: (aoi) => set({ aoi }),
   setDrawMode: (drawMode) => set({ drawMode }),
 
-  clearAoi: () => set({ ...initial, year: get().year, compareYear: get().compareYear }),
+  clearAoi: () =>
+    set({
+      ...initial,
+      year: get().year,
+      compareYear: get().compareYear,
+      basemap: get().basemap,
+    }),
 
   setState: (state) => set({ state }),
   setError: (error) => set({ error, state: error ? 'ERROR' : get().state }),
@@ -219,6 +241,15 @@ export const useStore = create<State & Actions>((set, get) => ({
     }),
 
   setCompareYear: (compareYear) => set({ compareYear, change: null }),
+
+  setBasemap: (id) => {
+    try {
+      localStorage.setItem(BASEMAP_STORAGE_KEY, id);
+    } catch {
+      // Private browsing or blocked storage: the choice just will not persist.
+    }
+    set({ basemap: id });
+  },
 
   toggleLayer: (key) => {
     const active = get().activeLayers;
