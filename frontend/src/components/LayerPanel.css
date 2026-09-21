@@ -1,0 +1,177 @@
+.layer-panel { overflow: hidden; }
+
+.layer-panel__head { border-bottom: 1px solid var(--line-subtle); }
+
+.layer-panel__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--s3) var(--s3);
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: inherit;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.layer-panel__toggle:hover { color: var(--ink-bright); }
+
+.layer-panel__count { display: flex; align-items: center; gap: var(--s2); }
+
+.layer-panel__badge {
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+}
+
+.layer-panel__body {
+  overflow-y: auto;
+  padding: var(--s2) var(--s2) var(--s3);
+}
+
+.layer-panel__locked { padding: var(--s2) var(--s2) var(--s3); }
+
+/* --- Groups ----------------------------------------------------------------- */
+
+.layer-group + .layer-group { margin-top: var(--s1); }
+
+.layer-group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--s2);
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: inherit;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.layer-group__head:hover { color: var(--ink-soft); }
+.layer-group__head--static { cursor: default; }
+
+.layer-group__items { display: flex; flex-direction: column; gap: 1px; }
+
+.layer-group__hint { padding: var(--s1) var(--s2) var(--s2); }
+
+/* --- Rows -------------------------------------------------------------------- */
+
+.layer-row-wrap {
+  border-radius: var(--r-sm);
+  transition: background var(--t-fast) var(--ease);
+}
+
+.layer-row-wrap.is-active { background: var(--bg-active); }
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 6px var(--s2);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+
+.layer-row:hover:not(.is-disabled) { background: var(--bg-hover); }
+.layer-row.is-disabled { opacity: 0.38; cursor: not-allowed; }
+
+.layer-row input[type='checkbox'] {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  accent-color: var(--accent);
+  cursor: inherit;
+}
+
+.layer-row__main { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+
+.layer-row__label {
+  font-size: var(--text-sm);
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-row__source {
+  font-size: var(--text-2xs);
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-row__legend { padding: 0 var(--s2) var(--s2) calc(var(--s2) + 21px); }
+
+/* --- Categorical legend --------------------------------------------------------- */
+
+.legend-cats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--s1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend-cats li {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--text-2xs);
+  color: var(--ink-muted);
+}
+
+.legend-cats__swatch {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+}
+
+/* --- Opacity ---------------------------------------------------------------------- */
+
+.layer-panel__opacity {
+  margin-top: var(--s3);
+  padding: var(--s3) var(--s2) 0;
+  border-top: 1px solid var(--line-subtle);
+}
+
+.layer-panel__opacity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+
+.layer-panel__opacity input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  height: 3px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.layer-panel__opacity input[type='range']:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.layer-panel__opacity-value {
+  flex: none;
+  min-width: 34px;
+  text-align: right;
+  font-size: var(--text-2xs);
+  color: var(--ink-muted);
+}

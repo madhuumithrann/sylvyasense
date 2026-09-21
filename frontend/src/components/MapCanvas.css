@@ -1,0 +1,192 @@
+.map-shell {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-map);
+}
+
+.map-canvas {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-void);
+}
+
+.map-canvas--inspect { cursor: crosshair !important; }
+
+/* --- MapLibre overrides ---------------------------------------------------
+   The stock controls do not match the rest of the interface. */
+
+.maplibregl-ctrl-attrib {
+  background: var(--bg-inset) !important;
+  backdrop-filter: blur(8px);
+  border-radius: var(--r-sm) 0 0 0 !important;
+  font-size: var(--text-2xs) !important;
+  color: var(--ink-faint) !important;
+  margin: 0 !important;
+}
+
+.maplibregl-ctrl-attrib a { color: var(--ink-muted) !important; }
+
+.maplibregl-ctrl-attrib-button {
+  background-color: transparent !important;
+  filter: invert(0.75);
+}
+
+.maplibregl-ctrl-scale {
+  background: var(--bg-inset) !important;
+  border: 1px solid var(--line) !important;
+  border-top: none !important;
+  border-radius: 0 0 var(--r-sm) var(--r-sm) !important;
+  color: var(--ink-soft) !important;
+  font-family: var(--font-mono) !important;
+  font-size: var(--text-2xs) !important;
+  padding: 1px 6px !important;
+  margin: 0 0 var(--s3) var(--s4) !important;
+  backdrop-filter: blur(8px);
+}
+
+.maplibregl-ctrl-bottom-right { margin-bottom: 0; }
+
+/* --- Toolbar --------------------------------------------------------------- */
+
+.map-toolbar {
+  position: absolute;
+  top: var(--s4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-map-ui);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2);
+  border-radius: var(--r-pill);
+  animation: rise var(--t-slow) var(--ease-out) both;
+}
+
+.map-toolbar .btn { border-radius: var(--r-pill); }
+
+.map-toolbar .btn--active {
+  background: var(--accent-dim);
+  border-color: var(--accent-line);
+  color: var(--accent-bright);
+}
+
+.map-toolbar__hint {
+  padding: 0 var(--s3);
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* --- Zoom ------------------------------------------------------------------ */
+
+.map-zoom {
+  position: absolute;
+  right: var(--s4);
+  bottom: calc(var(--s4) + 26px);
+  z-index: var(--z-map-ui);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: var(--r-md);
+}
+
+.map-zoom__btn {
+  width: 32px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+
+.map-zoom__btn:hover { background: var(--bg-hover); color: var(--ink-bright); }
+
+.map-zoom__level {
+  padding: 3px 0;
+  border-block: 1px solid var(--line-subtle);
+  font-size: var(--text-2xs);
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+/* --- Readout ---------------------------------------------------------------- */
+
+.map-readout {
+  position: absolute;
+  left: 50%;
+  bottom: var(--s3);
+  transform: translateX(-50%);
+  z-index: var(--z-map-ui);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  pointer-events: none;
+}
+
+.map-readout .pill { pointer-events: auto; }
+
+.map-readout__coords {
+  padding: 3px var(--s3);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--r-pill);
+  background: var(--bg-inset);
+  backdrop-filter: blur(10px);
+  font-size: var(--text-2xs);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+/* --- Field site markers ------------------------------------------------------ */
+
+.site-marker {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid var(--site-color, var(--accent));
+  border-radius: 50%;
+  background: var(--bg-panel-solid);
+  box-shadow: 0 0 0 3px rgba(4, 8, 10, 0.55), var(--shadow-sm);
+  color: var(--site-color, var(--accent));
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  animation: marker-in var(--t-slow) var(--ease-out) both;
+}
+
+.site-marker:hover,
+.site-marker:focus-visible {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 4px rgba(4, 8, 10, 0.6), var(--shadow-md);
+  z-index: 2;
+}
+
+@keyframes marker-in {
+  from { opacity: 0; transform: scale(0.55); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* --- Responsive --------------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+  .map-toolbar__hint { display: none; }
+}
+
+@media (max-width: 720px) {
+  .map-toolbar {
+    top: auto;
+    bottom: calc(var(--tabbar-h) + var(--s3));
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: calc(100vw - var(--s6));
+  }
+  .map-readout { display: none; }
+}

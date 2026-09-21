@@ -1,0 +1,89 @@
+.tabbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: 0 var(--s4);
+  background: var(--bg-raised);
+  border-top: 1px solid var(--line);
+  z-index: var(--z-topbar);
+}
+
+.tabbar__tabs { display: flex; align-items: stretch; height: var(--tabbar-h); }
+
+.tabbar__tab {
+  position: relative;
+  padding: 0 var(--s4);
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.tabbar__tab::after {
+  content: '';
+  position: absolute;
+  left: var(--s3);
+  right: var(--s3);
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform var(--t-base) var(--ease);
+}
+
+.tabbar__tab:hover:not(:disabled) { color: var(--ink); }
+
+.tabbar__tab.is-active { color: var(--ink-bright); }
+.tabbar__tab.is-active::after { transform: scaleX(1); }
+
+.tabbar__tab:disabled { opacity: 0.32; cursor: not-allowed; }
+
+/* --- Status cluster ---------------------------------------------------------- */
+
+.tabbar__status { display: flex; align-items: center; gap: var(--s3); }
+
+.tabbar__meta { font-size: var(--text-2xs); color: var(--ink-faint); }
+
+.tabbar__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 3px var(--s3);
+  border-radius: var(--r-pill);
+  background: var(--bg-inset);
+  border: 1px solid var(--line-subtle);
+  font-size: var(--text-2xs);
+  font-weight: 650;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.tabbar__state .status-dot { background: currentColor; }
+
+.tabbar__state--ok { color: var(--accent); border-color: var(--accent-line); }
+.tabbar__state--warn { color: var(--warn); border-color: var(--warn-line); }
+.tabbar__state--bad { color: var(--danger); border-color: var(--danger-line); }
+.tabbar__state--busy { color: var(--info); border-color: var(--info-dim); }
+.tabbar__state--busy .status-dot { animation: pulse 1.8s var(--ease) infinite; }
+
+@media (max-width: 900px) {
+  .tabbar { padding: 0 var(--s2); }
+  .tabbar__tab { padding: 0 var(--s3); font-size: var(--text-xs); }
+  .tabbar__meta { display: none; }
+}
+
+@media (max-width: 640px) {
+  .tabbar__tabs { overflow-x: auto; scrollbar-width: none; }
+  .tabbar__tabs::-webkit-scrollbar { display: none; }
+  .tabbar__status { display: none; }
+}

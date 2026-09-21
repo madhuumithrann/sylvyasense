@@ -69,6 +69,11 @@ SOIL_ENDMEMBER = {
 }
 
 # Water Cloud Model parameters for C-band (Attema & Ulaby 1978 formulation).
+#: Native ground resolutions the forward model renders at, before the
+#: observations are aggregated onto the coarser analysis grid.
+OPTICAL_NATIVE_RES_M = 10.0
+SAR_NATIVE_RES_M = 10.0
+
 WCM = {
     # sigma0 of a saturated canopy volume (dB), per polarisation
     "VV": {"sigma_veg_db": -6.5, "sigma_soil_db": -11.0, "B": 0.018},
@@ -259,7 +264,7 @@ class SandboxProvider:
     # ------------------------------------------------------------------
 
     def _render_optical(
-        self, scene: dict[str, np.ndarray], seed: int, year: int
+        self, scene: dict[str, np.ndarray], seed: int, year: int, cell_size_m: float
     ) -> tuple[dict[str, np.ndarray], np.ndarray, float, int]:
         """Spectral linear mixture model + a synthetic cloud field."""
         rng = np.random.default_rng(seed ^ (year * 2_654_435_761))
@@ -276,6 +281,11 @@ class SandboxProvider:
             clear_prob * (1.0 - scene_cloud_pct / 140.0), 0.12, 1.0
         )
 
+        # An analysis cell aggregates many native 10 m observations, and
+        # independent radiometric noise averages down with their count. Ignoring
+        # this makes a 400 m cell as noisy as a single 10 m pixel, which it is not.
+        native_px = max((cell_size_m / OPTICAL_NATIVE_RES_M) ** 2, 1.0)
+
         bands: dict[str, np.ndarray] = {}
         # Shadow fraction rises with slope — darkens all bands together.
         shade = np.clip(0.06 + 0.010 * scene["slope"], 0.0, 0.45)
@@ -287,14 +297,17 @@ class SandboxProvider:
             # Water: strong absorption beyond the green edge.
             water_ref = 0.035 if band in ("B2", "B3") else 0.008
             mixed = np.where(water, water_ref, mixed)
-            # Radiometric noise shrinks as more clear scenes are composited.
-            sigma = 0.006 / np.sqrt(np.maximum(valid_fraction * n_scenes, 1.0))
+            # Noise shrinks with both the number of clear scenes composited
+            # and the number of native pixels inside the analysis cell.
+            sigma = 0.006 / np.sqrt(
+                np.maximum(valid_fraction * n_scenes, 1.0) * native_px
+            )
             bands[band] = np.clip(mixed + rng.normal(0.0, 1.0, mixed.shape) * sigma, 0.0, 1.0)
 
         return bands, valid_fraction, scene_cloud_pct, n_scenes
 
     def _render_radar(
-        self, scene: dict[str, np.ndarray], seed: int, year: int
+        self, scene: dict[str, np.ndarray], seed: int, year: int, cell_size_m: float
     ) -> tuple[np.ndarray, np.ndarray, int]:
         """Water Cloud Model: canopy volume attenuates the soil return."""
         rng = np.random.default_rng((seed + 5501) ^ (year * 40_503))
@@ -320,8 +333,13 @@ class SandboxProvider:
             total *= np.clip(1.0 + 0.012 * (scene["slope"] - 10.0), 0.5, 1.8)
             # Water: specular, near-zero backscatter.
             total = np.where(scene["water"], _db_to_linear(-22.0), total)
-            # Multi-look speckle: gamma with shape = number of looks.
-            looks = max(n_scenes * 4, 4)
+            # Speckle averages down over every independent look in the cell:
+            # each acquisition contributes (cell / native resolution)^2 native
+            # pixels. A 400 m cell over 20 acquisitions is thousands of looks,
+            # not a handful, and treating it as a handful buries the biomass
+            # signal the model is supposed to recover.
+            native_px = max((cell_size_m / SAR_NATIVE_RES_M) ** 2, 1.0)
+            looks = float(np.clip(n_scenes * native_px, 4.0, 20_000.0))
             speckle = rng.gamma(shape=looks, scale=1.0 / looks, size=total.shape)
             out[pol] = _linear_to_db(total * speckle)
 
@@ -425,14 +443,18 @@ class SandboxProvider:
     # ------------------------------------------------------------------
 
     def audit(self, aoi: AOI, window_start: str, window_end: str) -> AuditResult:
-        lons, lats, _ = analysis_grid(aoi, 1024, self.settings.grid_max_cells)
+        lons, lats, cell_size_m = analysis_grid(
+            aoi, 1024, self.settings.grid_max_cells
+        )
         year = int(window_end[:4])
         scene = self._scene(aoi, lons, lats, year)
         mask = inside_mask(aoi, lons, lats)
 
         seed = _seed_from(aoi.aoi_id)
-        _, valid_fraction, cloud_pct, n_optical = self._render_optical(scene, seed, year)
-        _, _, n_radar = self._render_radar(scene, seed, year)
+        _, valid_fraction, cloud_pct, n_optical = self._render_optical(
+            scene, seed, year, cell_size_m
+        )
+        _, _, n_radar = self._render_radar(scene, seed, year, cell_size_m)
         gedi = self._simulate_gedi(aoi, scene, lons, lats)
 
         inside = mask & np.isfinite(scene["cover"])
@@ -556,8 +578,10 @@ class SandboxProvider:
         scene = self._scene(aoi, lons, lats, year)
         seed = _seed_from(aoi.aoi_id)
 
-        bands, valid_fraction, cloud_pct, n_optical = self._render_optical(scene, seed, year)
-        vv, vh, n_radar = self._render_radar(scene, seed, year)
+        bands, valid_fraction, cloud_pct, n_optical = self._render_optical(
+            scene, seed, year, cell_size_m
+        )
+        vv, vh, n_radar = self._render_radar(scene, seed, year, cell_size_m)
         gedi = self._simulate_gedi(aoi, scene, lons, lats)
 
         bundle = ObservationBundle(

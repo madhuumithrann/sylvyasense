@@ -1,0 +1,79 @@
+.app {
+  display: grid;
+  grid-template-rows: var(--topbar-h) 1fr var(--tabbar-h);
+  height: 100%;
+  width: 100%;
+  background: var(--bg-base);
+}
+
+/* The map owns the middle row entirely; panels float above it. That is the
+   point of the layout — the map is the product, not a widget among cards. */
+.app__map {
+  position: relative;
+  overflow: hidden;
+}
+
+/* --- Floating panel positioning ------------------------------------------- */
+
+.layer-panel {
+  position: absolute;
+  top: var(--s4);
+  left: var(--s4);
+  z-index: var(--z-panel);
+  width: var(--layers-w);
+  max-height: calc(100% - var(--s8));
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--t-slow) var(--ease), opacity var(--t-base) var(--ease);
+}
+
+.app[data-layers='closed'] .layer-panel__body { display: none; }
+
+.side-panel {
+  position: absolute;
+  top: var(--s4);
+  right: var(--s4);
+  bottom: var(--s4);
+  z-index: var(--z-panel);
+  width: var(--panel-w);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--t-slow) var(--ease), opacity var(--t-base) var(--ease);
+}
+
+.app[data-panel='closed'] .side-panel {
+  transform: translateX(calc(100% + var(--s6)));
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- Responsive -------------------------------------------------------------
+   Desktop is the primary target; tablet keeps the map dominant by narrowing
+   the panels rather than stacking them over the map. */
+
+@media (max-width: 1280px) {
+  :root { --panel-w: 340px; --layers-w: 232px; }
+}
+
+@media (max-width: 1024px) {
+  :root { --panel-w: 310px; --layers-w: 210px; }
+  .layer-panel { max-height: calc(100% - var(--s12)); }
+}
+
+@media (max-width: 820px) {
+  .side-panel {
+    top: auto;
+    left: var(--s3);
+    right: var(--s3);
+    bottom: var(--s3);
+    width: auto;
+    max-height: 58%;
+  }
+  .layer-panel {
+    top: var(--s3);
+    left: var(--s3);
+    width: 200px;
+    max-height: 40%;
+  }
+}

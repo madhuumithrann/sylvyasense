@@ -27,9 +27,11 @@ from app.providers.base import ObservationBundle
 
 #: Radius, in analysis cells, over which GEDI support is counted.
 GEDI_SUPPORT_RADIUS_CELLS = 2
-#: Footprint count within that radius that counts as full support. GEDI tracks
-#: are ~600 m apart, so genuinely well-supported cells sit on or beside a track.
-GEDI_SATURATION_COUNT = 30.0
+#: Footprint count within that radius that counts as full support. The bar is
+#: the sample size at which a local biomass relation could be fitted on its own
+#: near this cell, rather than merely "a track passed nearby": below roughly 60
+#: quality shots a local fit is not stable, so support is scored as partial.
+GEDI_SATURATION_COUNT = 60.0
 
 #: Relative 90% interval half-width that counts as fully precise / useless.
 PRECISION_BEST_REL_WIDTH = 0.15

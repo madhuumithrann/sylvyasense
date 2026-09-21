@@ -83,10 +83,14 @@ PLACES: tuple[Place, ...] = (
           demo=True, note="Evergreen montane forest, Kerala",
           aliases=("western ghats", "kerala", "india", "silent valley")),
     Place("Tongass National Forest", "United States", "Temperate coniferous", -134.20, 57.40, 1.2,
-          demo=True, note="Largest temperate rainforest in North America",
+          demo=True,
+          note="Largest temperate rainforest in North America. At 57°N it sits beyond "
+               "the GEDI 51.6° limit — a worked example of the uncalibrated fallback",
           aliases=("alaska", "usa", "temperate rainforest")),
     Place("Białowieża Forest", "Poland / Belarus", "Temperate broadleaf", 23.80, 52.72, 0.4,
-          demo=True, note="Last large primeval lowland forest in Europe",
+          demo=True,
+          note="Last large primeval lowland forest in Europe. At 52.7°N it sits beyond "
+               "the GEDI 51.6° limit — no local biomass calibration is possible",
           aliases=("bialowieza", "europe", "primeval")),
 
     # --- Amazon basin -----------------------------------------------------

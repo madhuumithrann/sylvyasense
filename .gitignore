@@ -82,3 +82,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Ad-hoc browser driver scripts used during development
+frontend/*.mjs
