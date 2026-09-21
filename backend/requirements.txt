@@ -1,0 +1,24 @@
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-multipart==0.0.20
+
+# --- Geospatial ---
+shapely==2.0.6
+pyproj==3.7.0
+
+# --- Numerics / modelling ---
+numpy==2.2.1
+scipy==1.15.0
+scikit-learn==1.6.0
+lightgbm==4.5.0
+
+# --- Raster tiles & reporting ---
+pillow==11.1.0
+reportlab==4.2.5
+
+# --- Earth Engine (real data backend) ---
+earthengine-api==1.4.3
+google-auth==2.37.0
