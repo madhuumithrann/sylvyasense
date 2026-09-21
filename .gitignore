@@ -72,6 +72,8 @@ models/*.onnx
 # ---- Test / tooling output ----
 playwright-report/
 test-results/
+frontend/test-results/
+frontend/playwright-report/
 .playwright/
 *.log
 logs/

@@ -33,6 +33,7 @@ export function MapCanvas() {
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const analysisLayersRef = useRef<string[]>([]);
   const basemapFailuresRef = useRef(0);
+  const unloadingRef = useRef(false);
 
   const [ready, setReady] = useState(false);
   const [basemapOffline, setBasemapOffline] = useState(false);
@@ -106,9 +107,26 @@ export function MapCanvas() {
     map.on('error', onError as never);
     map.on('error', (event: { error?: Error; sourceId?: string }) => {
       if (event.sourceId === 'basemap') return;
+      if (unloadingRef.current) return; // tiles abort on navigation; not a fault
+      if (event.sourceId) {
+        // A tile that fails to load simply does not paint. Worth surfacing for
+        // a developer, but it is handled and must not read as a broken app.
+        // eslint-disable-next-line no-console
+        console.warn('[maplibre] tile source', event.sourceId, event.error?.message);
+        return;
+      }
+      // A style-level failure means nothing will render at all.
       // eslint-disable-next-line no-console
-      console.error('[maplibre]', event.sourceId ?? 'style', event.error?.message);
+      console.error('[maplibre] style', event.error?.message);
     });
+
+    // In-flight tile requests abort when the page navigates away. Flagging
+    // that here keeps teardown noise out of the console.
+    const onUnload = () => {
+      unloadingRef.current = true;
+    };
+    window.addEventListener('pagehide', onUnload);
+    window.addEventListener('beforeunload', onUnload);
 
     map.on('mousemove', (event: MapMouseEvent) => {
       setCursor({ lon: event.lngLat.lng, lat: event.lngLat.lat });
@@ -126,6 +144,8 @@ export function MapCanvas() {
     });
 
     return () => {
+      window.removeEventListener('pagehide', onUnload);
+      window.removeEventListener('beforeunload', onUnload);
       drawerRef.current?.destroy();
       drawerRef.current = null;
       markersRef.current.forEach((m) => m.remove());
@@ -266,22 +286,30 @@ export function MapCanvas() {
     if (!showFieldSites || !fieldPlan) return;
 
     for (const site of fieldPlan.sites) {
-      const element = document.createElement('button');
-      element.type = 'button';
-      element.className = `site-marker site-marker--${site.priority.toLowerCase()}`;
-      element.textContent = site.label;
-      element.setAttribute(
+      // MapLibre positions a marker by writing `transform` on the element it
+      // is given. Anything we animate or scale must therefore live on a child,
+      // or our transform silently replaces the map's and every marker piles up
+      // at the map origin.
+      const anchorEl = document.createElement('div');
+      anchorEl.className = 'site-marker-anchor';
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `site-marker site-marker--${site.priority.toLowerCase()}`;
+      button.textContent = site.label;
+      button.setAttribute(
         'aria-label',
         `Field site ${site.label}, ${site.priority.toLowerCase()} priority`,
       );
-      element.style.setProperty('--site-color', PRIORITY_COLOR[site.priority]);
-      element.addEventListener('click', (event) => {
+      button.style.setProperty('--site-color', PRIORITY_COLOR[site.priority]);
+      button.addEventListener('click', (event) => {
         event.stopPropagation();
         setSelectedSite(site);
         setTab('fieldplan');
       });
+      anchorEl.appendChild(button);
 
-      const marker = new maplibregl.Marker({ element, anchor: 'center' })
+      const marker = new maplibregl.Marker({ element: anchorEl, anchor: 'center' })
         .setLngLat([site.lon, site.lat])
         .addTo(map);
       markersRef.current.push(marker);
