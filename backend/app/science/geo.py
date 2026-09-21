@@ -10,8 +10,9 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 import numpy as np
 from pyproj import Geod
@@ -125,7 +126,7 @@ def aoi_fingerprint(geometry: BaseGeometry) -> str:
 def _round_geojson(obj: Any, ndigits: int) -> Any:
     if isinstance(obj, dict):
         return {k: _round_geojson(v, ndigits) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
+    if isinstance(obj, list | tuple):
         return [_round_geojson(v, ndigits) for v in obj]
     if isinstance(obj, float):
         return round(obj, ndigits)

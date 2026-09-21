@@ -81,7 +81,7 @@ class AuditResult:
     verdict: str                  # READY | PARTIAL_DATA | INSUFFICIENT_DATA
     verdict_detail: str
     generated_at: str = field(
-        default_factory=lambda: dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+        default_factory=lambda: dt.datetime.now(dt.UTC).isoformat(timespec="seconds")
     )
 
     def as_dict(self) -> dict[str, Any]:

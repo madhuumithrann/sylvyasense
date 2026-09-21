@@ -175,7 +175,7 @@ def plan_survey(
 
     chosen: list[tuple[int, int]] = []
     chosen_lonlat: list[tuple[float, float]] = []
-    for r, c in zip(rows, cols):
+    for r, c in zip(rows, cols, strict=False):
         if len(chosen) >= n_sites:
             break
         if not np.isfinite(priority[r, c]) or priority[r, c] == -np.inf:
@@ -194,7 +194,7 @@ def plan_survey(
     # rather than silently returning a short plan.
     if len(chosen) < n_sites and min_sep > CORRELATION_RANGE_M:
         relaxed = max(CORRELATION_RANGE_M, min_sep * 0.5)
-        for r, c in zip(rows, cols):
+        for r, c in zip(rows, cols, strict=False):
             if len(chosen) >= n_sites:
                 break
             if (int(r), int(c)) in chosen:

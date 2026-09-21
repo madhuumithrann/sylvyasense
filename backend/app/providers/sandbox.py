@@ -94,7 +94,7 @@ WORLDCOVER_WATER = 80
 
 
 def _seed_from(aoi_id: str, salt: str = "") -> int:
-    digest = hashlib.sha256(f"{aoi_id}|{salt}".encode("utf-8")).digest()
+    digest = hashlib.sha256(f"{aoi_id}|{salt}".encode()).digest()
     return int.from_bytes(digest[:7], "big")
 
 

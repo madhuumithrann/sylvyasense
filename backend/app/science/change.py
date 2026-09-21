@@ -24,9 +24,9 @@ from typing import Any
 import numpy as np
 from scipy import stats
 
+from app.providers.base import ObservationBundle
 from app.science.biomass import BiomassResult
 from app.science.carbon import CARBON_FRACTION, CO2E_PER_CARBON
-from app.providers.base import ObservationBundle
 
 Z_CRIT = 1.959963985  # two-sided 95%
 

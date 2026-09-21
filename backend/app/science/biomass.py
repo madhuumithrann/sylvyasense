@@ -266,7 +266,7 @@ def _fit_gedi_local(
     median_model = models[0.50]
     raw_imp = np.asarray(median_model.feature_importances_, dtype=np.float64)
     total = float(raw_imp.sum()) or 1.0
-    importance = {f: float(v) / total for f, v in zip(features, raw_imp)}
+    importance = {f: float(v) / total for f, v in zip(features, raw_imp, strict=False)}
 
     caveats: list[str] = []
     if r2 is not None and r2 < 0.25:

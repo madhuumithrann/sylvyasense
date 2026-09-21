@@ -114,7 +114,7 @@ class EarthEngineProvider:
             raise earth_engine_not_configured(
                 f"Service-account key not found at {path}"
             )
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, encoding="utf-8") as fh:
             return json.load(fh)
 
     def _initialise(self) -> None:
@@ -665,9 +665,9 @@ class EarthEngineProvider:
                 .mosaic()
             )
             stack = stack.addBands(rh)
-            band_names = ["agbd", "agbd_se", "rh98"]
         except Exception:
-            band_names = ["agbd", "agbd_se"]
+            # L2A heights are a nice-to-have; L4A alone is enough to calibrate.
+            log.debug("GEDI L2A heights unavailable; continuing with L4A only")
 
         fc = stack.sample(
             region=region,
@@ -741,7 +741,7 @@ class EarthEngineProvider:
 def _ms_to_date(ms: float | int | None) -> str | None:
     if ms is None:
         return None
-    return dt.datetime.fromtimestamp(float(ms) / 1000.0, tz=dt.timezone.utc).date().isoformat()
+    return dt.datetime.fromtimestamp(float(ms) / 1000.0, tz=dt.UTC).date().isoformat()
 
 
 def _source_error(key: str, label: str, exc: Exception) -> SourceAvailability:
