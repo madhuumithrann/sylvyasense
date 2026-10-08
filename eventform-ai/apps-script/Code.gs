@@ -60,3 +60,10 @@ function doGet() {
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
+
+// Run this once from the editor (select "authorize" → Run) to grant Forms + Drive permissions before deploying.
+function authorize() {
+  var f = FormApp.create('EventForm AI — permission check');
+  DriveApp.getFileById(f.getId()).setTrashed(true);
+  Logger.log('Authorized OK');
+}
